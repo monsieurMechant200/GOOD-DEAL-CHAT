@@ -1,181 +1,240 @@
-# GOOD-DEAL-CHAT
+#  GOOD-DEAL-CHAT
 
-A knowledge-grounded conversational interface that empowers GOOD-DEAL training alumni to access core concepts and domain expertise on demand. Built with Flask, Mistral AI, and an integrated knowledge management system.
+> Une interface conversationnelle ancrée dans la connaissance, conçue pour les alumni de la formation GOOD-DEAL.  
+> Posez une question sur Excel, la gestion de stocks, les calculs financiers ou l’ingénierie de prompt, et obtenez instantanément une réponse experte, appuyée par une base de savoir structurée.
 
-## Overview
+![Stars](https://img.shields.io/badge/theme-cosmic-6ee7ff) ![Python](https://img.shields.io/badge/python-3.8+-blue) ![Flask](https://img.shields.io/badge/flask-2.x-lightgrey) ![Mistral AI](https://img.shields.io/badge/AI-Mistral-ffd580) ![License](https://img.shields.io/badge/license-MIT-green)
 
-GOOD-DEAL-CHAT is a specialized AI chat assistant designed for learners who have completed the GOOD-DEAL training program. It serves as a quick-reference companion for daily professional use—answering questions about Excel workflows, financial calculations, inventory management, Pareto analysis, and prompt engineering with responses grounded in a curated knowledge base.
+---
 
-The system combines a clean, cosmic-themed web interface with a Python backend that orchestrates requests to the Mistral AI API, enriched by a domain-specific knowledge base that ensures accurate, contextually relevant responses.
+##  Table des matières
+
+- [Aperçu](#aperçu)
+- [Architecture](#architecture)
+- [Fonctionnement](#fonctionnement)
+- [Technologies utilisées](#technologies-utilisées)
+- [Structure du projet](#structure-du-projet)
+- [Prise en main rapide](#prise-en-main-rapide)
+  - [Prérequis](#prérequis)
+  - [Installation locale](#installation-locale)
+  - [Lancement en local](#lancement-en-local)
+- [Déploiement](#déploiement)
+  - [Render (recommandé)](#render-recommandé)
+  - [Heroku (alternative)](#heroku-alternative)
+- [Gestion de la base de connaissances](#gestion-de-la-base-de-connaissances)
+- [Configuration](#configuration)
+- [Sécurité](#sécurité)
+- [Développement](#développement)
+- [Licence](#licence)
+- [Support](#support)
+
+---
+
+## Aperçu
+
+**GOOD-DEAL-CHAT** met à disposition des apprenants un assistant intelligent capable de répondre à leurs questions métier en s’appuyant exclusivement sur une base de connaissances dédiée. L’outil combine un backend Flask faisant office de proxy vers l’API Mistral AI, une interface web immersive (thème cosmique), et un module de transformation CSV → prompt système qui garantit des réponses précises et contextualisées.
+
+Cas d’usage typiques :
+- “Comment construire un diagramme de Pareto sous Excel ?”
+- “Explique-moi la différence entre le Few‑Shot et le Chained Prompting.”
+- “Quelle formule utiliser pour alerter en cas de rupture de stock ?”
+
+---
 
 ## Architecture
 
 ```
-GOOD-DEAL-CHAT/
-├── server.py                    Flask application & API layer
-├── static/
-│   ├── index.html               Responsive HTML interface with animated starfield
-│   ├── app.js                   Client-side messaging logic & Markdown rendering
-│   └── style.css                Cosmic theme styling
-├── convert_csv_to_txt.py        Knowledge base transformation utility
-├── knowledge_base.csv           Structured Q&A dataset
-├── knowledge.txt                Compiled system context (generated)
-├── requirements.txt             Python dependencies
-├── Procfile                     Heroku deployment configuration
-└── LICENSE                      MIT License
+┌─────────────┐      HTTP POST /chat      ┌──────────────┐      API Mistral      ┌───────────────┐
+│  Navigateur  │ ──────────────────────────│  Flask Proxy │ ─────────────────────│  Mistral AI    │
+│ (HTML/CSS/JS)│ ◀─────────────────────────│  (server.py) │ ◀────────────────────│  (chat compl.) │
+└─────────────┘      JSON {message}        └──────────────┘      messages +       └───────────────┘
+                                                              contexte système
+                                                              (knowledge.txt)
 ```
 
-### How It Works
-
-1. **Backend (server.py)** — Flask application that:
-   - Loads the knowledge base into memory on startup
-   - Exposes a `/chat` endpoint that accepts user messages
-   - Enriches requests with system context from `knowledge.txt`
-   - Proxies to the Mistral AI API with fixed parameters (temperature: 0.3, max_tokens: 1024)
-   - Returns formatted responses to the client
-
-2. **Frontend (static/)** — Responsive web interface with:
-   - Real-time chat bubbles with Markdown rendering (via marked.js)
-   - Animated starfield canvas background
-   - Auto-expanding textarea for messages
-   - Loading states and error recovery
-   - Accessibility features (ARIA labels, semantic HTML)
-
-3. **Knowledge Base System** — Two-stage pipeline:
-   - `knowledge_base.csv` — Structured questions, expert answers, and concrete examples
-   - `convert_csv_to_txt.py` — Transforms CSV into system prompt context
-   - `knowledge.txt` — Injected into every request as the LLM's reference material
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.8+
-- A Mistral AI API key (sign up at https://console.mistral.ai)
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/monsieurMechant200/GOOD-DEAL-CHAT.git
-   cd GOOD-DEAL-CHAT
-   ```
-
-2. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Configure environment variables:
-   ```bash
-   echo "MISTRAL_API_KEY=<your_mistral_api_key>" > .env
-   ```
-
-### Running Locally
-
-```bash
-python server.py
-```
-
-The app will start at `http://localhost:5000`. Visit the URL in your browser and begin chatting.
-
-### Deploying to Heroku
-
-1. Ensure the Procfile is in place (already included).
-
-2. Set the environment variable:
-   ```bash
-   heroku config:set MISTRAL_API_KEY=<your_mistral_api_key> -a <app-name>
-   ```
-
-3. Push to Heroku:
-   ```bash
-   git push heroku main
-   ```
-
-## Knowledge Base Management
-
-To update the knowledge base:
-
-1. **Edit** `knowledge_base.csv` with new or revised Q&A entries (delimiter: `;`).
-
-2. **Regenerate** the system context:
-   ```bash
-   python convert_csv_to_txt.py
-   ```
-   This produces `knowledge.txt`, which will be reloaded on the next server restart.
-
-3. **Commit** both files to version control:
-   ```bash
-   git add knowledge_base.csv knowledge.txt
-   git commit -m "Update knowledge base"
-   ```
-
-## Configuration
-
-Key parameters in `server.py`:
-
-| Parameter | Value | Notes |
-|-----------|-------|-------|
-| **Model** | `mistral-small` | Can be changed to `mistral-medium` for higher precision |
-| **Temperature** | `0.3` | Lower = more deterministic; higher = more creative |
-| **Max Tokens** | `1024` | Maximum response length |
-| **API URL** | `https://api.mistral.ai/v1/chat/completions` | Mistral endpoint |
-
-## Security Considerations
-
-- **API Key**: Never commit `.env` files to version control. Use environment variables in production.
-- **HTML Content**: User messages are plaintext-escaped; assistant responses are rendered via marked.js (which sanitizes by default).
-- **Timeout**: API requests enforce a 30-second timeout to prevent hanging connections.
-
-## Development
-
-### Running Tests
-
-Currently, no automated test suite is included. For manual testing:
-
-```bash
-# Terminal 1: Start the server
-python server.py
-
-# Terminal 2: Send test requests
-curl -X POST http://localhost:5000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Comment utiliser VLOOKUP en Excel?"}]}'
-```
-
-### Extending the System
-
-- **Custom styling**: Modify `static/style.css`.
-- **UI behavior**: Edit `static/app.js`.
-- **Backend logic**: Extend `server.py` with new endpoints or middleware.
-- **Knowledge content**: Update `knowledge_base.csv` and regenerate.
-
-## Dependencies
-
-- **Flask** — Web framework for Python
-- **requests** — HTTP library for Mistral API calls
-- **python-dotenv** — Environment variable management
-- **gunicorn** — WSGI server for production (Heroku)
-- **marked.js** — Client-side Markdown parser (CDN-loaded)
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Support & Feedback
-
-For issues, feature requests, or questions:
-1. Check existing issues on GitHub.
-2. Open a new issue with a clear title and description.
-3. Include any relevant error logs or screenshots.
+Le flux d’une requête :
+1. L’utilisateur saisit une question dans l’interface web.
+2. Le frontend envoie l’historique de la session au backend (`/chat`).
+3. Le serveur insère le contenu de `knowledge.txt` en tant que message `system` et appelle l’API Mistral.
+4. La réponse de l’IA est renvoyée au frontend, où le Markdown est interprété avant affichage.
 
 ---
 
-**Built with ✦ for GOOD-DEAL alumni**
+## Fonctionnement
+
+### Backend (`server.py`)
+- Charge la base de connaissances (`knowledge.txt`) au démarrage.
+- Expose un point de terminaison `/chat` qui reçoit `{ "messages": [...] }`.
+- Construit le tableau complet des messages en ajoutant le contexte système en première position.
+- Appelle l’API Mistral avec :
+  - Modèle : `mistral-small` (modifiable)
+  - Température : `0.3` (réponses précises)
+  - `max_tokens` : `1024`
+- Retourne la réponse de l’assistant sous la forme `{ "message": { "role": "assistant", "content": "..." } }`.
+
+### Frontend (`static/`)
+- **HTML** : structure sémantique et accessible (attributs ARIA).
+- **CSS** : thème cosmique avec toile étoilée animée (canvas), bulles de conversation translucides et animations fluides.
+- **JavaScript** :
+  - Maintient un historique de messages en mémoire (aucune persistance).
+  - Envoie les requêtes au backend via `fetch`.
+  - Interprète le Markdown des réponses avec [marked.js](https://marked.js.org) pour un affichage structuré (titres, listes, code, etc.).
+
+### Base de connaissances
+- **`knowledge_base.csv`** : base structurée avec les colonnes `Catégorie`, `Sous_Catégorie`, `Question_Apprenant`, `Réponse_Détaillée_Chatbot`, `Exemple_Pratique_Ou_Formule`.
+- **`convert_csv_to_txt.py`** : script Python qui lit le CSV et produit un bloc texte formaté injecté comme prompt système.
+- **`knowledge.txt`** : fichier texte chargé par le serveur. Il contient l’intégralité du savoir métier dans un format lisible par le modèle.
+
+---
+
+## Technologies utilisées
+
+| Couche        | Technologies |
+|---------------|--------------|
+| **Frontend**  | HTML5, CSS3, JavaScript (vanilla), Canvas API, [marked.js](https://marked.js.org) |
+| **Backend**   | Python 3, Flask, Gunicorn (production), requests, python-dotenv |
+| **IA**        | API Mistral AI (`mistral-small` ou `mistral-medium`) |
+| **Déploiement** | Render, Heroku, tout service supportant un Procfile/Gunicorn |
+
+---
+
+## Structure du projet
+
+```
+GOOD-DEAL-CHAT/
+├── server.py                    Application Flask – endpoint /chat
+├── static/
+│   ├── index.html               Interface utilisateur avec toile étoilée
+│   ├── app.js                   Logique de messagerie et rendu Markdown
+│   └── style.css                Thème cosmique
+├── convert_csv_to_txt.py        Conversion CSV → prompt système
+├── knowledge_base.csv           Questions/réponses métier (séparateur « ; »)
+├── knowledge.txt                Contexte système (généré)
+├── requirements.txt             Dépendances Python
+├── Procfile                     Commande de démarrage pour Gunicorn
+└── README.md                    Documentation
+```
+
+---
+
+## Prise en main rapide
+
+### Prérequis
+- Python 3.8 ou supérieur
+- Une clé API Mistral AI ([console.mistral.ai](https://console.mistral.ai))
+
+### Installation locale
+```bash
+git clone https://github.com/monsieurMechant200/GOOD-DEAL-CHAT.git
+cd GOOD-DEAL-CHAT
+python -m venv venv
+source venv/bin/activate      # Windows : venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Créez un fichier `.env` à la racine :
+```
+MISTRAL_API_KEY=votre_clé_api
+```
+
+### Lancement en local
+```bash
+python server.py
+```
+Ouvrez [http://localhost:5000](http://localhost:5000) dans votre navigateur.
+
+---
+
+## Déploiement
+
+### Render (recommandé)
+1. Poussez votre projet sur GitHub.
+2. Sur [Render](https://render.com), créez un **Web Service** connecté à votre dépôt.
+3. Paramétrez :
+   - **Build Command** : `pip install -r requirements.txt`
+   - **Start Command** : `gunicorn server:app --bind 0.0.0.0:$PORT`
+4. Ajoutez la variable d’environnement `MISTRAL_API_KEY` avec votre clé.
+5. Déployez. Votre service sera accessible sur `https://<nom>.onrender.com`.
+
+> 💡 Le plan gratuit de Render met le service en veille après 15 min d’inactivité ; la première requête peut prendre 30–60 s.
+
+### Heroku (alternative)
+```bash
+heroku create votre-app
+heroku config:set MISTRAL_API_KEY=votre_clé
+git push heroku main
+```
+
+---
+
+## Gestion de la base de connaissances
+
+1. **Modifiez** `knowledge_base.csv` avec vos nouvelles entrées (séparateur `;`).  
+2. **Régénérez** le contexte système :
+   ```bash
+   python convert_csv_to_txt.py
+   ```
+3. **Redémarrez** le serveur (ou redéployez) pour que le nouveau `knowledge.txt` soit pris en compte.
+
+Il est conseillé de versionner `knowledge_base.csv` **et** `knowledge.txt` afin de conserver un historique des connaissances déployées.
+
+---
+
+## Configuration
+
+Tous les paramètres centraux sont dans `server.py` :
+
+| Paramètre | Valeur par défaut | Description |
+|-----------|-------------------|-------------|
+| `MODEL` | `"mistral-small"` | Modèle IA (peut être remplacé par `mistral-medium`) |
+| `temperature` | `0.3` | Contrôle la créativité (plus bas = plus déterministe) |
+| `max_tokens` | `1024` | Longueur maximale de la réponse |
+| `MISTRAL_URL` | `"https://api.mistral.ai/v1/chat/completions"` | Endpoint de l’API |
+
+---
+
+## Sécurité
+
+- **Clé API** : stockée exclusivement dans des variables d’environnement, jamais dans le code source ni dans le dépôt.
+- **Contenu utilisateur** : les messages sont échappés côté frontend avant affichage (pas de HTML brut).
+- **Réponses de l’IA** : le Markdown est converti en HTML par `marked.js`, qui nettoie les scripts par défaut.
+- **Timeout** : un délai de 30 secondes empêche les connexions pendantes vers l’API Mistral.
+- **CORS** : le frontend appelle le même domaine (pas de requête cross-origin exposée).
+
+---
+
+## Développement
+
+### Tests manuels
+```bash
+# Lancez le serveur en local, puis exécutez :
+curl -X POST http://localhost:5000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "Comment utiliser SOMME.SI ?"}]}'
+```
+
+### Personnalisation
+- **Styles** : modifiez `static/style.css` (palette cosmique, animations).
+- **Logique frontend** : éditez `static/app.js`.
+- **Comportement backend** : ajoutez des middlewares, de nouvelles routes, ou modifiez les paramètres d’appel dans `server.py`.
+- **Connaissance** : enrichissez `knowledge_base.csv` et régénérez le prompt.
+
+---
+
+## Licence
+
+Ce projet est distribué sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+
+---
+
+## Support
+
+Pour toute question, suggestion ou anomalie :
+1. Consultez les [issues existantes](https://github.com/monsieurMechant200/GOOD-DEAL-CHAT/issues).
+2. Ouvrez une nouvelle issue en décrivant clairement le contexte, le comportement attendu et les éventuels messages d’erreur.
+
+---
+
+*Propulsé par DATAIKOS pour les alumni GOOD-DEAL - parce que chaque question mérite une réponse stellaire.*
+
+Ce README reflète la maturité technique du projet tout en restant accueillant pour les nouveaux utilisateurs. Vous pouvez l’adapter encore selon vos préférences (badges supplémentaires, captures d’écran de l’interface cosmique, etc.).
